@@ -1,0 +1,26 @@
+# Compiled Java / Maven target directories
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Local Environment Variables & Secrets
+.env
+*.env
+.env.local
+
+# IDE & Editor Configurations
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# Logs & Diagnostics
+*.log
+logs/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
