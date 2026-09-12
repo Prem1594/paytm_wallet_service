@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Paytm P2P Wallet Engine</title>
+  <title>PremPay &bull; P2P Wallet Engine</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -15,60 +15,50 @@
   
   <div class="max-w-4xl mx-auto w-full space-y-6">
 
-    <!-- Header & Health -->
-    <header class="flex justify-between items-center pb-4 border-b border-slate-800">
+    <!-- Header & Live Health -->
+    <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-4 border-b border-slate-800 gap-4">
       <div>
         <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
           <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
-          Paytm Wallet & P2P Engine
+          PremPay &bull; P2P Wallet Engine
         </h1>
-        <p class="text-xs text-slate-400 mt-0.5">prems-wallet-service</p>
+        <p class="text-xs text-slate-400 mt-0.5">PostgreSQL Cloud Persistence &bull; Canonical Row Locking &bull; Idempotent Ledger</p>
       </div>
       <div class="flex items-center gap-3 text-xs">
         <span id="health-badge" class="px-2.5 py-1 rounded-full bg-slate-900 text-slate-400 font-mono border border-slate-800">Checking...</span>
+        <a href="/prometheus" target="_blank" class="text-sky-400 hover:underline">/prometheus &rarr;</a>
       </div>
     </header>
 
-    <!-- ================= VIEW 1: AUTHENTICATION SCREEN ================= -->
+    <!-- ================= VIEW 1: AUTHENTICATION / LOGIN ================= -->
     <div id="view-auth" class="max-w-md mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6 my-8">
-      
-      <!-- 2 Buttons: Login vs Register -->
-      <div class="grid grid-cols-2 p-1 bg-slate-950 rounded-xl border border-slate-800">
-        <button id="btn-tab-login" onclick="setAuthMode('login')" 
-                class="py-2.5 text-xs font-bold rounded-lg bg-sky-600 text-white transition shadow">
-          1. Login
-        </button>
-        <button id="btn-tab-register" onclick="setAuthMode('register')" 
-                class="py-2.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition">
-          2. Register
-        </button>
+      <div>
+        <h2 class="text-base font-bold text-white">Access Your Wallet</h2>
+        <p class="text-xs text-slate-400 mt-1">Synced across all devices via Neon PostgreSQL.</p>
       </div>
 
-      <!-- Form Body -->
       <div class="space-y-4">
         <div>
-          <label id="auth-label" class="block text-xs font-medium text-slate-300 mb-1.5">Enter Username to Login</label>
-          <input id="auth-username-input" type="text" placeholder="e.g. alice, bob, prem"
+          <label class="block text-xs font-medium text-slate-300 mb-1.5">Enter User Identifier</label>
+          <input id="auth-username-input" type="text" placeholder="e.g. prem, alice, bob"
                  class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-lg text-sm text-white font-mono focus:border-sky-500 focus:outline-none">
         </div>
 
-        <!-- Alert Notification Box -->
         <div id="auth-alert" class="hidden p-3 rounded-lg text-xs leading-relaxed font-medium"></div>
 
         <button id="auth-submit-btn" onclick="handleAuthSubmit()"
                 class="w-full py-2.5 bg-sky-600 hover:bg-sky-500 text-white text-sm font-semibold rounded-lg transition shadow-lg shadow-sky-950">
-          Login to Account
+          Login / Open Wallet
         </button>
       </div>
 
-      <!-- Quick Directory of Registered Users in DB -->
+      <!-- Quick Profiles -->
       <div class="pt-4 border-t border-slate-800 space-y-2">
-        <div class="flex justify-between items-center text-[11px] text-slate-400">
-          <span>Registered Users in System:</span>
-          <button onclick="clearRegistry()" class="text-rose-400 hover:underline">Reset All</button>
-        </div>
-        <div id="registered-chips" class="flex flex-wrap gap-1.5 min-h-[24px]">
-          <span class="text-[11px] text-slate-600 italic">No users registered yet. Click Register to start.</span>
+        <p class="text-[11px] text-slate-400">Quick Test Profiles:</p>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="quickSelectUser('prem')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs border border-slate-700">prem</button>
+          <button onclick="quickSelectUser('alice')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs border border-slate-700">alice</button>
+          <button onclick="quickSelectUser('bob')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs border border-slate-700">bob</button>
         </div>
       </div>
     </div>
@@ -85,7 +75,7 @@
           <div>
             <div class="flex items-center gap-2">
               <h2 id="session-username" class="text-base font-bold text-white">alice</h2>
-              <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-mono">Logged In</span>
+              <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-mono">DB Active</span>
             </div>
             <p class="text-xs text-slate-400 font-mono truncate max-w-xs sm:max-w-md">Wallet ID: <span id="session-wallet-id" class="text-slate-300"></span></p>
           </div>
@@ -99,19 +89,19 @@
           </div>
           <button onclick="handleLogout()" 
                   class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg border border-slate-700 transition">
-            Switch / Logout
+            Switch User
           </button>
         </div>
       </div>
 
-      <!-- Actions Grid -->
+      <!-- Action Grid: Top-Up & P2P Transfer -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         <!-- 1. Add Balance (Top-Up) -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
           <div>
             <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400">1. Add Balance (Top-Up)</h3>
-            <p class="text-xs text-slate-500 mt-0.5">Credit funds to your active wallet in PostgreSQL.</p>
+            <p class="text-xs text-slate-500 mt-0.5">Directly credits funds to this account in PostgreSQL.</p>
           </div>
 
           <div>
@@ -123,7 +113,6 @@
             </div>
           </div>
 
-          <!-- Quick Increment Buttons -->
           <div class="grid grid-cols-4 gap-2">
             <button onclick="setTopUpAmount(50)" class="py-1.5 bg-slate-800 hover:bg-slate-700 rounded text-xs text-slate-300 font-medium">+₹50</button>
             <button onclick="setTopUpAmount(100)" class="py-1.5 bg-slate-800 hover:bg-slate-700 rounded text-xs text-slate-300 font-medium">+₹100</button>
@@ -137,28 +126,36 @@
           </button>
         </div>
 
-        <!-- 2. Send Money (P2P Transfer with DB Registration Check) -->
+        <!-- 2. Send Money (P2P Transfer with DB Resolution) -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
           <div>
             <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400">2. Send Money (P2P)</h3>
-            <p class="text-xs text-slate-500 mt-0.5">Recipient must already be registered in the system.</p>
+            <p class="text-xs text-slate-500 mt-0.5">Enter recipient name to resolve their wallet in DB.</p>
           </div>
 
-          <!-- Recipient Input -->
+          <!-- Recipient Input & Resolution -->
           <div class="space-y-1.5">
             <label class="block text-xs font-medium text-slate-300">Recipient Username</label>
             <div class="flex gap-2">
-              <input id="recipient-input" type="text" placeholder="Type username..."
-                     oninput="validateRecipient()"
+              <input id="recipient-input" type="text" placeholder="e.g. alice, bob"
                      class="flex-1 px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-white font-mono focus:border-sky-500 focus:outline-none">
+              <button onclick="resolveRecipientInDb()" 
+                      class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-sky-400 text-xs font-semibold rounded-lg border border-slate-700 transition">
+                Resolve DB
+              </button>
             </div>
-            <!-- Quick chips to click recipient -->
-            <div id="transfer-recipient-chips" class="flex flex-wrap gap-1 pt-1 text-[11px] text-slate-400"></div>
+            <!-- Quick Chips for common testing -->
+            <div class="flex gap-2 items-center text-[11px] text-slate-400 pt-1">
+              <span>Quick pick:</span>
+              <button onclick="setRecipient('prem')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 font-mono">prem</button>
+              <button onclick="setRecipient('alice')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 font-mono">alice</button>
+              <button onclick="setRecipient('bob')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 font-mono">bob</button>
+            </div>
           </div>
 
           <!-- Recipient Status Pill -->
           <div id="recipient-status-box" class="p-2.5 rounded-lg border border-slate-800 bg-slate-950 text-xs font-mono text-slate-400">
-            Status: Type a recipient username above
+            Status: Type a recipient and click Resolve DB
           </div>
 
           <!-- Amount -->
@@ -175,7 +172,7 @@
           <!-- Pay Button -->
           <button id="btn-pay-now" onclick="handleTransfer()" disabled
                   class="w-full py-2.5 bg-slate-800 text-slate-500 cursor-not-allowed font-semibold text-xs rounded-lg transition">
-            Recipient Must Register First
+            Resolve Recipient First
           </button>
         </div>
 
@@ -184,7 +181,7 @@
       <!-- Live Inspection Telemetry -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-2">
         <div class="flex justify-between items-center text-xs">
-          <span class="font-bold uppercase tracking-wider text-slate-400">Response Terminal</span>
+          <span class="font-bold uppercase tracking-wider text-slate-400">Live Telemetry Terminal</span>
           <span id="telemetry-meta" class="font-mono text-slate-400">Status: Ready</span>
         </div>
         <pre id="telemetry-terminal" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-300 overflow-x-auto h-32">{ "info": "Ready for transactions" }</pre>
@@ -197,11 +194,6 @@
   <script>
     const API_BASE = window.location.origin;
 
-    // Client-side registered directory stored in localStorage
-    // Structure: { [userId]: { id: "wallet-uuid", userId: "name", registeredAt: "timestamp" } }
-    let registry = JSON.parse(localStorage.getItem('paytm_registered_users') || '{}');
-
-    let currentAuthMode = 'login'; // 'login' or 'register'
     let currentUser = null;        // { userId, walletId, balancePaise }
     let verifiedRecipient = null; // { userId, walletId }
 
@@ -211,50 +203,22 @@
       );
     }
 
-    function saveRegistry() {
-      localStorage.setItem('paytm_registered_users', JSON.stringify(registry));
-      renderRegistryChips();
+    function quickSelectUser(name) {
+      document.getElementById('auth-username-input').value = name;
+      handleAuthSubmit();
     }
 
-    function clearRegistry() {
-      if (confirm('Clear registered user list in browser?')) {
-        registry = {};
-        saveRegistry();
-      }
-    }
-
-    function setAuthMode(mode) {
-      currentAuthMode = mode;
-      const btnLogin = document.getElementById('btn-tab-login');
-      const btnRegister = document.getElementById('btn-tab-register');
-      const submitBtn = document.getElementById('auth-submit-btn');
-      const label = document.getElementById('auth-label');
-      const alertBox = document.getElementById('auth-alert');
-      alertBox.classList.add('hidden');
-
-      if (mode === 'login') {
-        btnLogin.className = 'py-2.5 text-xs font-bold rounded-lg bg-sky-600 text-white transition shadow';
-        btnRegister.className = 'py-2.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition';
-        submitBtn.textContent = 'Login to Account';
-        label.textContent = 'Enter Username to Login';
-      } else {
-        btnRegister.className = 'py-2.5 text-xs font-bold rounded-lg bg-sky-600 text-white transition shadow';
-        btnLogin.className = 'py-2.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition';
-        submitBtn.textContent = 'Register New Wallet in Database';
-        label.textContent = 'Choose New Username to Register';
-      }
+    function setRecipient(name) {
+      document.getElementById('recipient-input').value = name;
+      resolveRecipientInDb();
     }
 
     function showAuthAlert(msg, type = 'error') {
       const box = document.getElementById('auth-alert');
       box.classList.remove('hidden');
-      if (type === 'error') {
-        box.className = 'p-3 rounded-lg text-xs bg-rose-950/90 border border-rose-800 text-rose-300';
-      } else if (type === 'warning') {
-        box.className = 'p-3 rounded-lg text-xs bg-amber-950/90 border border-amber-800 text-amber-300';
-      } else {
-        box.className = 'p-3 rounded-lg text-xs bg-emerald-950/90 border border-emerald-800 text-emerald-300';
-      }
+      box.className = (type === 'error')
+        ? 'p-3 rounded-lg text-xs bg-rose-950/90 border border-rose-800 text-rose-300'
+        : 'p-3 rounded-lg text-xs bg-emerald-950/90 border border-emerald-800 text-emerald-300';
       box.textContent = msg;
     }
 
@@ -265,59 +229,19 @@
         return;
       }
 
-      if (currentAuthMode === 'register') {
-        // Condition: If user already registered, tell them they are already there!
-        if (registry[username]) {
-          showAuthAlert(`User "${username}" is already registered! Please switch to Login.`, 'warning');
-          return;
-        }
+      // Query PostgreSQL via idempotent POST /wallets
+      try {
+        const res = await fetch(`${API_BASE}/wallets`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: username })
+        });
 
-        // Call backend POST /wallets to create the wallet row in PostgreSQL
-        try {
-          const res = await fetch(`${API_BASE}/wallets`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: username })
-          });
-
-          if (!res.ok) throw new Error('Failed to create wallet');
-          const data = await res.json();
-
-          // Save to verified registry
-          registry[username] = {
-            id: data.id,
-            userId: data.userId,
-            registeredAt: new Date().toISOString()
-          };
-          saveRegistry();
-
-          // Proceed directly into logged-in dashboard
-          loginSession(data);
-        } catch (err) {
-          showAuthAlert('Server error registering wallet: ' + err.message);
-        }
-
-      } else {
-        // Login Mode: Check if user exists in registered directory
-        if (!registry[username]) {
-          showAuthAlert(`User "${username}" not found! Please click "Register" to create an account first.`, 'error');
-          return;
-        }
-
-        // User is registered: fetch their latest balance from Postgres using idempotent POST /wallets
-        try {
-          const res = await fetch(`${API_BASE}/wallets`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: username })
-          });
-
-          if (!res.ok) throw new Error('Failed to fetch wallet');
-          const data = await res.json();
-          loginSession(data);
-        } catch (err) {
-          showAuthAlert('Failed to connect to database: ' + err.message);
-        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        loginSession(data);
+      } catch (err) {
+        showAuthAlert('Failed to connect to wallet engine: ' + err.message);
       }
     }
 
@@ -335,9 +259,7 @@
 
       document.getElementById('view-auth').classList.add('hidden');
       document.getElementById('view-dashboard').classList.remove('hidden');
-
-      renderTransferRecipientChips();
-      validateRecipient();
+      resetRecipientState();
     }
 
     function handleLogout() {
@@ -347,7 +269,7 @@
       document.getElementById('auth-alert').classList.add('hidden');
       document.getElementById('view-dashboard').classList.add('hidden');
       document.getElementById('view-auth').classList.remove('hidden');
-      renderRegistryChips();
+      resetRecipientState();
     }
 
     function updateBalanceDisplay(paise) {
@@ -383,18 +305,24 @@
       }
     }
 
-    function validateRecipient() {
+    function resetRecipientState() {
+      verifiedRecipient = null;
+      const statusBox = document.getElementById('recipient-status-box');
+      const payBtn = document.getElementById('btn-pay-now');
+      statusBox.className = 'p-2.5 rounded-lg border border-slate-800 bg-slate-950 text-xs font-mono text-slate-400';
+      statusBox.textContent = 'Status: Type a recipient and click Resolve DB';
+      payBtn.disabled = true;
+      payBtn.className = 'w-full py-2.5 bg-slate-800 text-slate-500 cursor-not-allowed font-semibold text-xs rounded-lg transition';
+      payBtn.textContent = 'Resolve Recipient First';
+    }
+
+    async function resolveRecipientInDb() {
       const recInput = document.getElementById('recipient-input').value.trim().toLowerCase();
       const statusBox = document.getElementById('recipient-status-box');
       const payBtn = document.getElementById('btn-pay-now');
 
       if (!recInput) {
-        verifiedRecipient = null;
-        statusBox.className = 'p-2.5 rounded-lg border border-slate-800 bg-slate-950 text-xs font-mono text-slate-400';
-        statusBox.textContent = 'Status: Type a recipient username above';
-        payBtn.disabled = true;
-        payBtn.className = 'w-full py-2.5 bg-slate-800 text-slate-500 cursor-not-allowed font-semibold text-xs rounded-lg transition';
-        payBtn.textContent = 'Enter Recipient';
+        resetRecipientState();
         return;
       }
 
@@ -408,21 +336,31 @@
         return;
       }
 
-      // Check if recipient is in registered DB directory
-      if (!registry[recInput]) {
-        verifiedRecipient = null;
-        statusBox.className = 'p-2.5 rounded-lg border border-rose-900 bg-rose-950/40 text-xs font-mono text-rose-400';
-        statusBox.textContent = `❌ User "${recInput}" has NOT registered in DB. They must register first!`;
-        payBtn.disabled = true;
-        payBtn.className = 'w-full py-2.5 bg-slate-800 text-slate-500 cursor-not-allowed font-semibold text-xs rounded-lg transition';
-        payBtn.textContent = 'Recipient Must Register First';
-      } else {
-        verifiedRecipient = registry[recInput];
+      statusBox.textContent = `Resolving "${recInput}" in PostgreSQL...`;
+
+      try {
+        const res = await fetch(`${API_BASE}/wallets`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: recInput })
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        verifiedRecipient = {
+          userId: data.userId,
+          walletId: data.id
+        };
+
         statusBox.className = 'p-2.5 rounded-lg border border-emerald-800 bg-emerald-950/40 text-xs font-mono text-emerald-400';
-        statusBox.textContent = `✔ Verified in DB: ${verifiedRecipient.userId} (${verifiedRecipient.id.substring(0, 8)}...)`;
+        statusBox.textContent = `✔ Verified in DB: ${verifiedRecipient.userId} (${verifiedRecipient.walletId.substring(0, 8)}...)`;
         payBtn.disabled = false;
         payBtn.className = 'w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-lg transition shadow-lg shadow-indigo-950';
         payBtn.textContent = `Pay ${verifiedRecipient.userId}`;
+      } catch (err) {
+        statusBox.className = 'p-2.5 rounded-lg border border-rose-900 bg-rose-950/40 text-xs font-mono text-rose-400';
+        statusBox.textContent = `❌ Failed to resolve recipient in database: ${err.message}`;
       }
     }
 
@@ -432,7 +370,7 @@
       if (isNaN(inr) || inr <= 0) return;
 
       const amountPaise = Math.round(inr * 100);
-      const idempotencyKey = 'tx_' + uuidv4();
+      const idempotencyKey = 'p2p_tx_' + uuidv4();
 
       try {
         const res = await fetch(`${API_BASE}/transfers`, {
@@ -444,7 +382,7 @@
           },
           body: JSON.stringify({
             sourceWalletId: currentUser.walletId,
-            targetWalletId: verifiedRecipient.id,
+            targetWalletId: verifiedRecipient.walletId,
             amountPaise: amountPaise
           })
         });
@@ -453,7 +391,7 @@
         renderTelemetry(res.status, data);
 
         if (res.ok) {
-          // Re-fetch current user balance
+          // Refresh current user balance directly from database
           const refreshRes = await fetch(`${API_BASE}/wallets`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -467,44 +405,6 @@
       } catch (err) {
         renderTelemetry(500, { error: err.message });
       }
-    }
-
-    function renderRegistryChips() {
-      const container = document.getElementById('registered-chips');
-      const users = Object.keys(registry);
-      if (users.length === 0) {
-        container.innerHTML = '<span class="text-[11px] text-slate-600 italic">No users registered yet. Click Register to start.</span>';
-        return;
-      }
-      container.innerHTML = users.map(u => `
-        <button onclick="fillAuthUsername('${u}')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs border border-slate-700">
-          ${u}
-        </button>
-      `).join('');
-    }
-
-    function renderTransferRecipientChips() {
-      const container = document.getElementById('transfer-recipient-chips');
-      const recipients = Object.keys(registry).filter(u => u !== currentUser.userId);
-      if (recipients.length === 0) {
-        container.innerHTML = '<span class="text-[11px] text-slate-500 italic">No other users registered. Register another user to send money.</span>';
-        return;
-      }
-      container.innerHTML = '<span class="text-slate-500 mr-1">Quick pick:</span>' + recipients.map(u => `
-        <button onclick="selectRecipient('${u}')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 font-mono text-[11px] border border-slate-700">
-          ${u}
-        </button>
-      `).join('');
-    }
-
-    function fillAuthUsername(username) {
-      document.getElementById('auth-username-input').value = username;
-      setAuthMode('login');
-    }
-
-    function selectRecipient(username) {
-      document.getElementById('recipient-input').value = username;
-      validateRecipient();
     }
 
     function renderTelemetry(status, data) {
@@ -536,7 +436,6 @@
       }
     }
 
-    renderRegistryChips();
     checkHealth();
   </script>
 </body>
