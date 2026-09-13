@@ -15,14 +15,14 @@
   
   <div class="max-w-4xl mx-auto w-full space-y-6">
 
-    <!-- Header & Live Health -->
-    <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-4 border-b border-slate-800 gap-4">
+    <!-- Top Header & Live Health -->
+    <header class="flex justify-between items-center pb-4 border-b border-slate-800">
       <div>
         <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
           <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
-          PremPay &bull; P2P Wallet Engine
+          Prems Paytm Wallet &bull; P2P Wallet Engine
         </h1>
-        <p class="text-xs text-slate-400 mt-0.5">PostgreSQL Cloud Persistence &bull; Canonical Row Locking &bull; Idempotent Ledger</p>
+        <p class="text-xs text-slate-400 mt-0.5">Paytm Karo</p>
       </div>
       <div class="flex items-center gap-3 text-xs">
         <span id="health-badge" class="px-2.5 py-1 rounded-full bg-slate-900 text-slate-400 font-mono border border-slate-800">Checking...</span>
@@ -30,40 +30,51 @@
       </div>
     </header>
 
-    <!-- ================= VIEW 1: AUTHENTICATION / LOGIN ================= -->
+    <!-- ================= VIEW 1: AUTHENTICATION (REGISTER / LOGIN) ================= -->
     <div id="view-auth" class="max-w-md mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6 my-8">
-      <div>
-        <h2 class="text-base font-bold text-white">Access Your Wallet</h2>
-        <p class="text-xs text-slate-400 mt-1">Synced across all devices via Neon PostgreSQL.</p>
-      </div>
-
-      <div class="space-y-4">
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1.5">Enter User Identifier</label>
-          <input id="auth-username-input" type="text" placeholder="e.g. prem, alice, bob"
-                 class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-lg text-sm text-white font-mono focus:border-sky-500 focus:outline-none">
-        </div>
-
-        <div id="auth-alert" class="hidden p-3 rounded-lg text-xs leading-relaxed font-medium"></div>
-
-        <button id="auth-submit-btn" onclick="handleAuthSubmit()"
-                class="w-full py-2.5 bg-sky-600 hover:bg-sky-500 text-white text-sm font-semibold rounded-lg transition shadow-lg shadow-sky-950">
-          Login / Open Wallet
+      
+      <!-- 2 Switch Buttons: Login vs Register -->
+      <div class="grid grid-cols-2 p-1 bg-slate-950 rounded-xl border border-slate-800">
+        <button id="btn-tab-login" onclick="setAuthMode('login')" 
+                class="py-2.5 text-xs font-bold rounded-lg bg-sky-600 text-white transition shadow">
+          1. Login
+        </button>
+        <button id="btn-tab-register" onclick="setAuthMode('register')" 
+                class="py-2.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition">
+          2. Register
         </button>
       </div>
 
-      <!-- Quick Profiles -->
+      <!-- Form Body -->
+      <div class="space-y-4">
+        <div>
+          <label id="auth-label" class="block text-xs font-medium text-slate-300 mb-1.5">Enter Username to Login</label>
+          <input id="auth-username-input" type="text" placeholder="e.g. prem, alice, bob"
+                 onkeydown="if(event.key==='Enter') handleAuthSubmit()"
+                 class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-lg text-sm text-white font-mono focus:border-sky-500 focus:outline-none">
+        </div>
+
+        <!-- Alert Notification Box -->
+        <div id="auth-alert" class="hidden p-3 rounded-lg text-xs leading-relaxed font-medium"></div>
+
+        <button id="auth-submit-btn" onclick="handleAuthSubmit()"
+                class="w-full py-2.5 bg-sky-600 hover:bg-sky-500 text-white text-sm font-semibold rounded-lg transition shadow-lg shadow-sky-950 flex items-center justify-center gap-2">
+          <span>Login to Account</span>
+        </button>
+      </div>
+
+      <!-- Quick Test Accounts -->
       <div class="pt-4 border-t border-slate-800 space-y-2">
-        <p class="text-[11px] text-slate-400">Quick Test Profiles:</p>
+        <p class="text-[11px] text-slate-400">Quick Switch Accounts:</p>
         <div class="flex flex-wrap gap-2">
-          <button onclick="quickSelectUser('prem')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs border border-slate-700">prem</button>
-          <button onclick="quickSelectUser('alice')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs border border-slate-700">alice</button>
-          <button onclick="quickSelectUser('bob')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs border border-slate-700">bob</button>
+          <button onclick="quickFillUser('prem')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs border border-slate-700">prem</button>
+          <button onclick="quickFillUser('alice')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs border border-slate-700">alice</button>
+          <button onclick="quickFillUser('bob')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs border border-slate-700">bob</button>
         </div>
       </div>
     </div>
 
-    <!-- ================= VIEW 2: LOGGED-IN DASHBOARD ================= -->
+    <!-- ================= VIEW 2: AUTHENTICATED DASHBOARD ================= -->
     <div id="view-dashboard" class="hidden space-y-6">
 
       <!-- Active User Session Bar -->
@@ -75,7 +86,7 @@
           <div>
             <div class="flex items-center gap-2">
               <h2 id="session-username" class="text-base font-bold text-white">alice</h2>
-              <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-mono">DB Active</span>
+              <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-mono">Session Active</span>
             </div>
             <p class="text-xs text-slate-400 font-mono truncate max-w-xs sm:max-w-md">Wallet ID: <span id="session-wallet-id" class="text-slate-300"></span></p>
           </div>
@@ -89,9 +100,22 @@
           </div>
           <button onclick="handleLogout()" 
                   class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg border border-slate-700 transition">
-            Switch User
+            Switch / Logout
           </button>
         </div>
+      </div>
+
+      <!-- Transfer Success Banner (Auto pops up after money is sent) -->
+      <div id="transfer-success-banner" class="hidden p-4 rounded-xl bg-emerald-950/80 border border-emerald-700 text-emerald-300 space-y-1 text-xs">
+        <div class="flex justify-between items-center">
+          <span class="font-bold flex items-center gap-1.5 text-sm">
+            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            Payment Successful!
+          </span>
+          <button onclick="document.getElementById('transfer-success-banner').classList.add('hidden')" class="text-emerald-400 hover:text-white font-bold">&times;</button>
+        </div>
+        <p id="transfer-success-desc" class="text-emerald-200">Money has been debited and transferred.</p>
+        <p id="transfer-success-key" class="text-[10px] font-mono text-emerald-400 truncate"></p>
       </div>
 
       <!-- Action Grid: Top-Up & P2P Transfer -->
@@ -101,7 +125,7 @@
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
           <div>
             <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400">1. Add Balance (Top-Up)</h3>
-            <p class="text-xs text-slate-500 mt-0.5">Directly credits funds to this account in PostgreSQL.</p>
+            <p class="text-xs text-slate-500 mt-0.5">Credit funds to your active wallet in PostgreSQL.</p>
           </div>
 
           <div>
@@ -113,6 +137,7 @@
             </div>
           </div>
 
+          <!-- Quick Increment Buttons -->
           <div class="grid grid-cols-4 gap-2">
             <button onclick="setTopUpAmount(50)" class="py-1.5 bg-slate-800 hover:bg-slate-700 rounded text-xs text-slate-300 font-medium">+₹50</button>
             <button onclick="setTopUpAmount(100)" class="py-1.5 bg-slate-800 hover:bg-slate-700 rounded text-xs text-slate-300 font-medium">+₹100</button>
@@ -120,42 +145,43 @@
             <button onclick="setTopUpAmount(1000)" class="py-1.5 bg-slate-800 hover:bg-slate-700 rounded text-xs text-slate-300 font-medium">+₹1k</button>
           </div>
 
-          <button onclick="handleTopUp()" 
+          <button id="btn-topup" onclick="handleTopUp()" 
                   class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-lg transition shadow-lg shadow-emerald-950">
             Deposit to Balance
           </button>
         </div>
 
-        <!-- 2. Send Money (P2P Transfer with DB Resolution) -->
+        <!-- 2. Send Money (P2P Transfer with DB Recipient Check) -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
           <div>
             <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400">2. Send Money (P2P)</h3>
-            <p class="text-xs text-slate-500 mt-0.5">Enter recipient name to resolve their wallet in DB.</p>
+            <p class="text-xs text-slate-500 mt-0.5">Recipient must already exist in database before transfer.</p>
           </div>
 
           <!-- Recipient Input & Resolution -->
           <div class="space-y-1.5">
             <label class="block text-xs font-medium text-slate-300">Recipient Username</label>
             <div class="flex gap-2">
-              <input id="recipient-input" type="text" placeholder="e.g. alice, bob"
+              <input id="recipient-input" type="text" placeholder="e.g. alice, bob, prem"
+                     oninput="handleRecipientInput()"
                      class="flex-1 px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-white font-mono focus:border-sky-500 focus:outline-none">
-              <button onclick="resolveRecipientInDb()" 
+              <button onclick="verifyRecipientInDb()" 
                       class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-sky-400 text-xs font-semibold rounded-lg border border-slate-700 transition">
-                Resolve DB
+                Check DB
               </button>
             </div>
-            <!-- Quick Chips for common testing -->
+            <!-- Quick Chips for testing -->
             <div class="flex gap-2 items-center text-[11px] text-slate-400 pt-1">
               <span>Quick pick:</span>
-              <button onclick="setRecipient('prem')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 font-mono">prem</button>
-              <button onclick="setRecipient('alice')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 font-mono">alice</button>
-              <button onclick="setRecipient('bob')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 font-mono">bob</button>
+              <button onclick="quickPickRecipient('prem')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 font-mono">prem</button>
+              <button onclick="quickPickRecipient('alice')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 font-mono">alice</button>
+              <button onclick="quickPickRecipient('bob')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 font-mono">bob</button>
             </div>
           </div>
 
           <!-- Recipient Status Pill -->
           <div id="recipient-status-box" class="p-2.5 rounded-lg border border-slate-800 bg-slate-950 text-xs font-mono text-slate-400">
-            Status: Type a recipient and click Resolve DB
+            Status: Type a recipient and click Check DB
           </div>
 
           <!-- Amount -->
@@ -169,19 +195,19 @@
             <p id="transfer-paise-calc" class="text-[11px] font-mono text-slate-500 mt-1">= 2500 paise</p>
           </div>
 
-          <!-- Pay Button -->
+          <!-- Pay Button: Disabled until recipient is verified -->
           <button id="btn-pay-now" onclick="handleTransfer()" disabled
                   class="w-full py-2.5 bg-slate-800 text-slate-500 cursor-not-allowed font-semibold text-xs rounded-lg transition">
-            Resolve Recipient First
+            Verify Recipient First
           </button>
         </div>
 
       </div>
 
-      <!-- Live Inspection Telemetry -->
+      <!-- Live Telemetry Terminal -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-2">
         <div class="flex justify-between items-center text-xs">
-          <span class="font-bold uppercase tracking-wider text-slate-400">Live Telemetry Terminal</span>
+          <span class="font-bold uppercase tracking-wider text-slate-400">Response Terminal</span>
           <span id="telemetry-meta" class="font-mono text-slate-400">Status: Ready</span>
         </div>
         <pre id="telemetry-terminal" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-300 overflow-x-auto h-32">{ "info": "Ready for transactions" }</pre>
@@ -194,8 +220,10 @@
   <script>
     const API_BASE = window.location.origin;
 
+    let currentAuthMode = 'login'; // 'login' or 'register'
     let currentUser = null;        // { userId, walletId, balancePaise }
     let verifiedRecipient = null; // { userId, walletId }
+    let isTransferInFlight = false; // Lock against double clicks
 
     function uuidv4() {
       return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
@@ -203,14 +231,80 @@
       );
     }
 
-    function quickSelectUser(name) {
-      document.getElementById('auth-username-input').value = name;
-      handleAuthSubmit();
+    // ================= PERSISTENT KNOWN USERS =================
+    // Stored locally to avoid re-creation, while synchronizing with the database
+    function getKnownUsers() {
+      try {
+        return JSON.parse(localStorage.getItem('prempay_db_users') || '["prem", "alice", "bob"]');
+      } catch {
+        return ["prem", "alice", "bob"];
+      }
     }
 
-    function setRecipient(name) {
-      document.getElementById('recipient-input').value = name;
-      resolveRecipientInDb();
+    function addKnownUser(u) {
+      const list = getKnownUsers();
+      if (!list.includes(u)) {
+        list.push(u);
+        localStorage.setItem('prempay_db_users', JSON.stringify(list));
+      }
+    }
+
+    // ================= DB USER LOOKUP =================
+    // Checks if the user exists in PostgreSQL
+    async function fetchUserByName(username) {
+      const cleanUser = username.trim().toLowerCase();
+      if (!cleanUser) return { exists: false, wallet: null };
+
+      // 1. First probe GET /wallets/users/{username}
+      try {
+        const getRes = await fetch(`${API_BASE}/wallets/users/${encodeURIComponent(cleanUser)}`);
+        if (getRes.ok) {
+          const data = await getRes.json();
+          addKnownUser(cleanUser);
+          return { exists: true, wallet: data };
+        }
+      } catch (e) {}
+
+      // 2. Fallback check using known registry and idempotent DB fetch
+      const known = getKnownUsers();
+      if (known.includes(cleanUser)) {
+        try {
+          const postRes = await fetch(`${API_BASE}/wallets`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: cleanUser })
+          });
+          if (postRes.ok) {
+            const data = await postRes.json();
+            return { exists: true, wallet: data };
+          }
+        } catch (e) {}
+      }
+
+      return { exists: false, wallet: null };
+    }
+
+    // ================= AUTH (REGISTER VS LOGIN) =================
+    function setAuthMode(mode) {
+      currentAuthMode = mode;
+      const btnLogin = document.getElementById('btn-tab-login');
+      const btnRegister = document.getElementById('btn-tab-register');
+      const submitBtn = document.getElementById('auth-submit-btn');
+      const label = document.getElementById('auth-label');
+      const alertBox = document.getElementById('auth-alert');
+      alertBox.classList.add('hidden');
+
+      if (mode === 'login') {
+        btnLogin.className = 'py-2.5 text-xs font-bold rounded-lg bg-sky-600 text-white transition shadow';
+        btnRegister.className = 'py-2.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition';
+        submitBtn.innerHTML = '<span>Login to Account</span>';
+        label.textContent = 'Enter Username to Login';
+      } else {
+        btnRegister.className = 'py-2.5 text-xs font-bold rounded-lg bg-sky-600 text-white transition shadow';
+        btnLogin.className = 'py-2.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition';
+        submitBtn.innerHTML = '<span>Create & Register Wallet</span>';
+        label.textContent = 'Choose New Username to Register';
+      }
     }
 
     function showAuthAlert(msg, type = 'error') {
@@ -218,7 +312,9 @@
       box.classList.remove('hidden');
       box.className = (type === 'error')
         ? 'p-3 rounded-lg text-xs bg-rose-950/90 border border-rose-800 text-rose-300'
-        : 'p-3 rounded-lg text-xs bg-emerald-950/90 border border-emerald-800 text-emerald-300';
+        : (type === 'warning')
+          ? 'p-3 rounded-lg text-xs bg-amber-950/90 border border-amber-800 text-amber-300'
+          : 'p-3 rounded-lg text-xs bg-emerald-950/90 border border-emerald-800 text-emerald-300';
       box.textContent = msg;
     }
 
@@ -229,28 +325,68 @@
         return;
       }
 
-      // Query PostgreSQL via idempotent POST /wallets
-      try {
-        const res = await fetch(`${API_BASE}/wallets`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: username })
-        });
+      const submitBtn = document.getElementById('auth-submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-70');
 
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        loginSession(data);
+      try {
+        const check = await fetchUserByName(username);
+
+        if (currentAuthMode === 'register') {
+          // Check if user already exists
+          if (check.exists) {
+            showAuthAlert(`User "${username}" is ALREADY registered in the database! Please switch to Login.`, 'warning');
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-70');
+            return;
+          }
+
+          // Call create API
+          const res = await fetch(`${API_BASE}/wallets`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: username })
+          });
+
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          addKnownUser(username);
+          loginSession(data);
+
+        } else {
+          // Mode is LOGIN: check if user exists in database
+          if (!check.exists) {
+            showAuthAlert(`User "${username}" does NOT exist in database. Please register first.`, 'error');
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-70');
+            return;
+          }
+          loginSession(check.wallet);
+        }
       } catch (err) {
-        showAuthAlert('Failed to connect to wallet engine: ' + err.message);
+        showAuthAlert('Error connecting to wallet engine: ' + err.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-70');
       }
     }
 
+    function quickFillUser(name) {
+      document.getElementById('auth-username-input').value = name;
+      handleAuthSubmit();
+    }
+
+    // ================= SESSION PERSISTENCE =================
+    // Prevents closing or losing session when coming back/refreshing
     function loginSession(wallet) {
       currentUser = {
         userId: wallet.userId,
         walletId: wallet.id,
         balancePaise: wallet.balancePaise
       };
+
+      // Persist active session in localStorage
+      localStorage.setItem('prempay_active_session', JSON.stringify({ userId: currentUser.userId, walletId: currentUser.walletId }));
 
       document.getElementById('session-username').textContent = currentUser.userId;
       document.getElementById('user-avatar').textContent = currentUser.userId.substring(0, 2).toUpperCase();
@@ -260,18 +396,52 @@
       document.getElementById('view-auth').classList.add('hidden');
       document.getElementById('view-dashboard').classList.remove('hidden');
       resetRecipientState();
+
+      // Push history state to protect against mobile back-button accidental exits
+      if (!window.location.hash.includes('app')) {
+        window.history.pushState({ loggedIn: true }, '', '#app');
+      }
     }
 
     function handleLogout() {
       currentUser = null;
       verifiedRecipient = null;
+      localStorage.removeItem('prempay_active_session'); // Clear saved session
       document.getElementById('auth-username-input').value = '';
       document.getElementById('auth-alert').classList.add('hidden');
       document.getElementById('view-dashboard').classList.add('hidden');
       document.getElementById('view-auth').classList.remove('hidden');
       resetRecipientState();
+      window.history.pushState(null, '', window.location.pathname);
     }
 
+    window.addEventListener('popstate', (e) => {
+      // Prevent closing session on mobile hardware back button
+      if (currentUser) {
+        window.history.pushState({ loggedIn: true }, '', '#app');
+      }
+    });
+
+    // Auto restore session if returning from another app or tab refresh
+    async function restoreSessionIfPresent() {
+      try {
+        const saved = localStorage.getItem('prempay_active_session');
+        if (saved) {
+          const { userId } = JSON.parse(saved);
+          const res = await fetch(`${API_BASE}/wallets`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            loginSession(data);
+          }
+        }
+      } catch (e) {}
+    }
+
+    // ================= TOP-UP =================
     function updateBalanceDisplay(paise) {
       currentUser.balancePaise = paise;
       document.getElementById('session-balance-inr').textContent = '₹' + (paise / 100).toFixed(2);
@@ -285,6 +455,10 @@
     async function handleTopUp() {
       const inr = parseFloat(document.getElementById('topup-amount-inr').value);
       if (isNaN(inr) || inr <= 0) return;
+
+      const btn = document.getElementById('btn-topup');
+      btn.disabled = true;
+      btn.textContent = 'Processing Deposit...';
 
       const amountPaise = Math.round(inr * 100);
       try {
@@ -302,7 +476,15 @@
         }
       } catch (err) {
         renderTelemetry(500, { error: err.message });
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Deposit to Balance';
       }
+    }
+
+    // ================= P2P RECIPIENT VERIFICATION =================
+    function handleRecipientInput() {
+      resetRecipientState();
     }
 
     function resetRecipientState() {
@@ -310,13 +492,18 @@
       const statusBox = document.getElementById('recipient-status-box');
       const payBtn = document.getElementById('btn-pay-now');
       statusBox.className = 'p-2.5 rounded-lg border border-slate-800 bg-slate-950 text-xs font-mono text-slate-400';
-      statusBox.textContent = 'Status: Type a recipient and click Resolve DB';
+      statusBox.textContent = 'Status: Type a recipient and click Check DB';
       payBtn.disabled = true;
       payBtn.className = 'w-full py-2.5 bg-slate-800 text-slate-500 cursor-not-allowed font-semibold text-xs rounded-lg transition';
-      payBtn.textContent = 'Resolve Recipient First';
+      payBtn.textContent = 'Verify Recipient First';
     }
 
-    async function resolveRecipientInDb() {
+    function quickPickRecipient(name) {
+      document.getElementById('recipient-input').value = name;
+      verifyRecipientInDb();
+    }
+
+    async function verifyRecipientInDb() {
       const recInput = document.getElementById('recipient-input').value.trim().toLowerCase();
       const statusBox = document.getElementById('recipient-status-box');
       const payBtn = document.getElementById('btn-pay-now');
@@ -327,7 +514,6 @@
       }
 
       if (recInput === currentUser.userId) {
-        verifiedRecipient = null;
         statusBox.className = 'p-2.5 rounded-lg border border-rose-900 bg-rose-950/40 text-xs font-mono text-rose-400';
         statusBox.textContent = '❌ Cannot send money to yourself';
         payBtn.disabled = true;
@@ -336,40 +522,56 @@
         return;
       }
 
-      statusBox.textContent = `Resolving "${recInput}" in PostgreSQL...`;
+      statusBox.textContent = `Verifying "${recInput}" in database...`;
 
-      try {
-        const res = await fetch(`${API_BASE}/wallets`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: recInput })
-        });
+      const check = await fetchUserByName(recInput);
 
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-
+      if (!check.exists) {
+        verifiedRecipient = null;
+        statusBox.className = 'p-2.5 rounded-lg border border-rose-900 bg-rose-950/40 text-xs font-mono text-rose-400';
+        statusBox.textContent = `❌ User "${recInput}" does NOT exist in DB. They must register first!`;
+        payBtn.disabled = true;
+        payBtn.className = 'w-full py-2.5 bg-slate-800 text-slate-500 cursor-not-allowed font-semibold text-xs rounded-lg transition';
+        payBtn.textContent = 'Recipient Not in DB';
+      } else {
         verifiedRecipient = {
-          userId: data.userId,
-          walletId: data.id
+          userId: check.wallet.userId,
+          walletId: check.wallet.id
         };
-
         statusBox.className = 'p-2.5 rounded-lg border border-emerald-800 bg-emerald-950/40 text-xs font-mono text-emerald-400';
         statusBox.textContent = `✔ Verified in DB: ${verifiedRecipient.userId} (${verifiedRecipient.walletId.substring(0, 8)}...)`;
         payBtn.disabled = false;
-        payBtn.className = 'w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-lg transition shadow-lg shadow-indigo-950';
-        payBtn.textContent = `Pay ${verifiedRecipient.userId}`;
-      } catch (err) {
-        statusBox.className = 'p-2.5 rounded-lg border border-rose-900 bg-rose-950/40 text-xs font-mono text-rose-400';
-        statusBox.textContent = `❌ Failed to resolve recipient in database: ${err.message}`;
+        payBtn.className = 'w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-lg transition shadow-lg shadow-indigo-950 cursor-pointer';
+        payBtn.textContent = `Send Money to ${verifiedRecipient.userId}`;
       }
     }
 
+    // ================= TRANSFER EXECUTION & DOUBLE-SEND PREVENTION =================
     async function handleTransfer() {
-      if (!verifiedRecipient) return;
+      if (!verifiedRecipient || isTransferInFlight) return;
+
       const inr = parseFloat(document.getElementById('transfer-amount-inr').value);
-      if (isNaN(inr) || inr <= 0) return;
+      if (isNaN(inr) || inr <= 0) {
+        alert('Please enter a valid transfer amount');
+        return;
+      }
 
       const amountPaise = Math.round(inr * 100);
+      if (amountPaise > currentUser.balancePaise) {
+        alert('Insufficient funds! Current balance: ₹' + (currentUser.balancePaise / 100).toFixed(2));
+        return;
+      }
+
+      // Lock UI to prevent sending twice
+      isTransferInFlight = true;
+      const payBtn = document.getElementById('btn-pay-now');
+      payBtn.disabled = true;
+      payBtn.className = 'w-full py-2.5 bg-indigo-900 text-indigo-300 font-semibold text-xs rounded-lg transition cursor-wait flex items-center justify-center gap-2';
+      payBtn.innerHTML = `
+        <svg class="animate-spin h-4 w-4 text-indigo-300" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        <span>Processing Transfer... Do Not Click</span>
+      `;
+
       const idempotencyKey = 'p2p_tx_' + uuidv4();
 
       try {
@@ -391,7 +593,14 @@
         renderTelemetry(res.status, data);
 
         if (res.ok) {
-          // Refresh current user balance directly from database
+          // Show clear visual confirmation
+          const banner = document.getElementById('transfer-success-banner');
+          document.getElementById('transfer-success-desc').textContent = 
+            `Successfully transferred ₹${(amountPaise / 100).toFixed(2)} to ${verifiedRecipient.userId}.`;
+          document.getElementById('transfer-success-key').textContent = `Transaction Key: ${idempotencyKey}`;
+          banner.classList.remove('hidden');
+
+          // Refresh sender balance
           const refreshRes = await fetch(`${API_BASE}/wallets`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -401,9 +610,20 @@
             const freshData = await refreshRes.json();
             updateBalanceDisplay(freshData.balancePaise);
           }
+
+          // Reset recipient to prevent accidental repeat transfer
+          document.getElementById('recipient-input').value = '';
+          resetRecipientState();
+        } else {
+          alert('Transfer declined: ' + (data.reason || data.message || 'Status ' + res.status));
+          resetRecipientState();
         }
       } catch (err) {
         renderTelemetry(500, { error: err.message });
+        alert('Network error during transfer: ' + err.message);
+        resetRecipientState();
+      } finally {
+        isTransferInFlight = false;
       }
     }
 
@@ -436,7 +656,9 @@
       }
     }
 
+    // Initialize
     checkHealth();
+    restoreSessionIfPresent();
   </script>
 </body>
 </html>
