@@ -43,6 +43,6 @@ For a financial ledger, **Consistency (Linearizability) is prioritized over Avai
 ---
 
 ## 6. Infrastructure & Free-Tier Cost Note
-* **Hosting:** Render Web Service (Free Tier, 0.1 vCPU, 512MB RAM) / Fly.io.
-* **Database:** Managed PostgreSQL (Render Free Tier / Neon Free Tier).
+* **Hosting:** Render Web Service (Free Tier, 0.1 vCPU, 512MB RAM)
+* **Database:** Managed PostgreSQL (Neon Free Tier).
 * **Total Cost:** ₹0.00 (Zero card required).
