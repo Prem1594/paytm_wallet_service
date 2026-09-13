@@ -1,4 +1,3 @@
-cat << 'EOF' > burst.sh
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -157,9 +156,3 @@ echo ""
 echo "============================================================"
 echo " ALL INVARIANT PROBES COMPLETED CLEANLY"
 echo "============================================================"
-EOF
-
-chmod +x burst.sh
-git add burst.sh
-git commit -m "fix(test): persist production burst probe script"
-git push https://<YOUR_PERSONAL_TOKEN>@github.com/Prem1594/paytm_wallet_service.git main
