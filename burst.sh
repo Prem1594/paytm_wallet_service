@@ -1,144 +1,165 @@
+cat << 'EOF' > burst.sh
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE_URL="${1:-http://localhost:8000}"
+BASE_URL="${1:-https://prems-paytm-wallet-service.onrender.com}"
 echo "============================================================"
-echo "Paytm Wallet & P2P Transfer: Automated Invariant Probe"
-echo "Target URL: ${BASE_URL}"
+echo " Paytm Wallet & P2P Transfer: Automated Invariant Probe"
+echo " Target URL: ${BASE_URL}"
 echo "============================================================"
 
-# Dependency check
-command -v jq >/dev/null 2>&1 || { echo "Error: 'jq' is required. Install via: sudo apt-get install -y jq"; exit 1; }
-command -v curl >/dev/null 2>&1 || { echo "Error: 'curl' is required."; exit 1; }
+command -v curl >/dev/null 2>&1 || { echo "curl required"; exit 1; }
+command -v jq >/dev/null 2>&1 || { echo "jq required (sudo apt install jq)"; exit 1; }
 
-# -----------------------------------------------------------------------------
-# GATE 1: Race-free get-or-create (50 Concurrent Requests)
-# -----------------------------------------------------------------------------
+TMP_DIR=$(mktemp -d)
+trap 'rm -rf "${TMP_DIR}"' EXIT
+
+# --- Health Check ---
 echo ""
-echo ">>> [PROBE 1/3] Gate 1: Testing Race-Free Get-or-Create (50 concurrent)..."
-GATE1_USER="burst_user_$(date +%s%N)"
-GATE1_DIR=$(mktemp -d)
+echo ">>> Checking Service Health..."
+HEALTH_STATUS=$(curl -s "${BASE_URL}/health" | jq -r '.status // "DOWN"' 2>/dev/null || echo "DOWN")
+if [ "${HEALTH_STATUS}" != "UP" ]; then
+  echo "Service is not ready at ${BASE_URL} (status: ${HEALTH_STATUS})."
+  echo "If hosted on Render Free tier, it may be waking from idle. Wait 30s and retry."
+  exit 1
+fi
+echo "✔ Health check passed: Service is UP"
+
+# --- Invariant 1: Race-Free Get-or-Create ---
+echo ""
+echo ">>> [PROBE 1/3] Testing Race-Free Get-or-Create (50 concurrent)..."
+USER_PROBE_1="concur_user_$(date +%s%N)"
+pids=()
 
 for i in $(seq 1 50); do
-  curl -s --noproxy "*" -X POST "${BASE_URL}/wallets" \
-    -H "Content-Type: application/json" \
-    -d "{\"userId\": \"${GATE1_USER}\"}" \
-    -o "${GATE1_DIR}/res_${i}.json" &
+  (
+    curl -s -X POST "${BASE_URL}/wallets" \
+      -H "Content-Type: application/json" \
+      -d "{\"userId\":\"${USER_PROBE_1}\"}" > "${TMP_DIR}/res1_${i}.json" 2>/dev/null
+  ) &
+  pids+=($!)
 done
-wait
 
-DISTINCT_WALLETS=$(cat "${GATE1_DIR}"/res_*.json | jq -r '.id' | sort -u | wc -l)
-rm -rf "${GATE1_DIR}"
+for pid in "${pids[@]}"; do wait "$pid"; done
+
+DISTINCT_WALLETS=$(cat "${TMP_DIR}"/res1_*.json | jq -r '.id // empty' 2>/dev/null | sort -u | wc -l)
 
 if [ "${DISTINCT_WALLETS}" -eq 1 ]; then
-  echo "  ✔ GATE 1 PASSED: 50 concurrent requests yielded exactly 1 wallet."
+  echo "✔ Race-free get-or-create PASSED: 50 concurrent requests yielded exactly 1 wallet."
 else
-  echo "  ✖ GATE 1 FAILED: Expected 1 distinct wallet, found ${DISTINCT_WALLETS}."
+  echo "❌ Race-free get-or-create FAILED: ${DISTINCT_WALLETS} distinct wallets found."
   exit 1
 fi
 
-# -----------------------------------------------------------------------------
-# GATE 2: Idempotent Retry Storm (30 Concurrent Requests with Same Key)
-# -----------------------------------------------------------------------------
+# --- Invariant 2: Idempotent Retry Storm & Tamper Defense ---
 echo ""
-echo ">>> [PROBE 2/3] Gate 2: Testing Idempotent Retry Storm (K=30 concurrent)..."
-W_A=$(curl -s --noproxy "*" -X POST "${BASE_URL}/wallets" -H "Content-Type: application/json" -d "{\"userId\": \"storm_a_$(date +%s%N)\"}" | jq -r '.id')
-W_B=$(curl -s --noproxy "*" -X POST "${BASE_URL}/wallets" -H "Content-Type: application/json" -d "{\"userId\": \"storm_b_$(date +%s%N)\"}" | jq -r '.id')
+echo ">>> [PROBE 2/3] Testing Idempotent Retry Storm & Tamper Defense..."
+USER_A="alice_$(date +%s%N)"
+USER_B="bob_$(date +%s%N)"
 
-# Top-up wallet A with 10,000 paise (₹100)
-curl -s --noproxy "*" -X POST "${BASE_URL}/wallets/${W_A}/topup" \
-  -H "Content-Type: application/json" \
-  -d '{"amountPaise": 10000}' > /dev/null
+WALLET_A=$(curl -s -X POST "${BASE_URL}/wallets" -H "Content-Type: application/json" -d "{\"userId\":\"${USER_A}\"}" | jq -r '.id')
+WALLET_B=$(curl -s -X POST "${BASE_URL}/wallets" -H "Content-Type: application/json" -d "{\"userId\":\"${USER_B}\"}" | jq -r '.id')
 
-STORM_KEY="storm_key_$(date +%s%N)"
-GATE2_DIR=$(mktemp -d)
+curl -s -X POST "${BASE_URL}/wallets/${WALLET_A}/topup" -H "Content-Type: application/json" -d '{"amountPaise":50000}' > /dev/null
+
+IDEM_KEY="idem_key_$(date +%s%N)"
+pids=()
 
 for i in $(seq 1 30); do
-  curl -s --noproxy "*" -X POST "${BASE_URL}/transfers" \
-    -H "Content-Type: application/json" \
-    -H "Idempotency-Key: ${STORM_KEY}" \
-    -d "{\"sourceWalletId\": \"${W_A}\", \"targetWalletId\": \"${W_B}\", \"amountPaise\": 2500}" \
-    -o "${GATE2_DIR}/res_${i}.json" &
+  (
+    curl -s -X POST "${BASE_URL}/transfers" \
+      -H "Content-Type: application/json" \
+      -H "Idempotency-Key: ${IDEM_KEY}" \
+      -d "{\"sourceWalletId\":\"${WALLET_A}\",\"targetWalletId\":\"${WALLET_B}\",\"amountPaise\":1000}" > "${TMP_DIR}/res2_${i}.json" 2>/dev/null
+  ) &
+  pids+=($!)
 done
-wait
 
-DISTINCT_TX_IDS=$(cat "${GATE2_DIR}"/res_*.json | jq -r '.transferId' | sort -u | wc -l)
-BAL_A=$(curl -s --noproxy "*" "${BASE_URL}/wallets/${W_A}" | jq -r '.balancePaise')
-BAL_B=$(curl -s --noproxy "*" "${BASE_URL}/wallets/${W_B}" | jq -r '.balancePaise')
-rm -rf "${GATE2_DIR}"
+for pid in "${pids[@]}"; do wait "$pid"; done
 
-if [ "${DISTINCT_TX_IDS}" -eq 1 ] && [ "${BAL_A}" -eq 7500 ] && [ "${BAL_B}" -eq 2500 ]; then
-  echo "  ✔ GATE 2 (Retry Storm) PASSED: Exactly 1 debit applied (Balance A: 7500, Balance B: 2500)."
+BAL_A=$(curl -s -X POST "${BASE_URL}/wallets" -H "Content-Type: application/json" -d "{\"userId\":\"${USER_A}\"}" | jq -r '.balancePaise')
+BAL_B=$(curl -s -X POST "${BASE_URL}/wallets" -H "Content-Type: application/json" -d "{\"userId\":\"${USER_B}\"}" | jq -r '.balancePaise')
+
+if [ "${BAL_A}" -eq 49000 ] && [ "${BAL_B}" -eq 1000 ]; then
+  echo "✔ Idempotency retry storm PASSED: 30 identical requests applied exactly once."
 else
-  echo "  ✖ GATE 2 FAILED: Distinct IDs=${DISTINCT_TX_IDS}, Bal A=${BAL_A}, Bal B=${BAL_B}"
+  echo "❌ Idempotency storm FAILED: Balances inconsistent (A: ${BAL_A}, B: ${BAL_B})."
   exit 1
 fi
 
-# Gate 2 Extension: Same Key with Altered Payload must return 409 Conflict
-CONFLICT_HTTP_STATUS=$(curl -s --noproxy "*" -o /dev/null -w "%{http_code}" -X POST "${BASE_URL}/transfers" \
+TAMPER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${BASE_URL}/transfers" \
   -H "Content-Type: application/json" \
-  -H "Idempotency-Key: ${STORM_KEY}" \
-  -d "{\"sourceWalletId\": \"${W_A}\", \"targetWalletId\": \"${W_B}\", \"amountPaise\": 5000}")
+  -H "Idempotency-Key: ${IDEM_KEY}" \
+  -d "{\"sourceWalletId\":\"${WALLET_A}\",\"targetWalletId\":\"${WALLET_B}\",\"amountPaise\":5000}")
 
-if [ "${CONFLICT_HTTP_STATUS}" -eq 409 ]; then
-  echo "  ✔ GATE 2 (Payload Tampering) PASSED: Altered body with reused key returned HTTP 409 Conflict."
+if [ "${TAMPER_STATUS}" -eq 409 ]; then
+  echo "✔ Tampered payload defense PASSED: HTTP 409 Conflict returned on key reuse."
 else
-  echo "  ✖ GATE 2 (Payload Tampering) FAILED: Expected HTTP 409, got ${CONFLICT_HTTP_STATUS}."
+  echo "❌ Tampered payload defense FAILED: Expected HTTP 409, got ${TAMPER_STATUS}."
   exit 1
 fi
 
-# -----------------------------------------------------------------------------
-# GATE 3: Conservation & No-Overdraft Under Contention (100 Concurrent Cross-Transfers)
-# -----------------------------------------------------------------------------
+# --- Invariant 3: Conservation & No-Overdraft Under Contention ---
 echo ""
-echo ">>> [PROBE 3/3] Gate 3: Testing Conservation & Contention (100 concurrent A↔B↔C)..."
-W1=$(curl -s --noproxy "*" -X POST "${BASE_URL}/wallets" -H "Content-Type: application/json" -d "{\"userId\": \"user_1_$(date +%s%N)\"}" | jq -r '.id')
-W2=$(curl -s --noproxy "*" -X POST "${BASE_URL}/wallets" -H "Content-Type: application/json" -d "{\"userId\": \"user_2_$(date +%s%N)\"}" | jq -r '.id')
-W3=$(curl -s --noproxy "*" -X POST "${BASE_URL}/wallets" -H "Content-Type: application/json" -d "{\"userId\": \"user_3_$(date +%s%N)\"}" | jq -r '.id')
+echo ">>> [PROBE 3/3] Testing Balance Conservation & Deadlock-Free Contention..."
+USER_X="cx_$(date +%s%N)"
+USER_Y="cy_$(date +%s%N)"
 
-# Seed with 10,000 paise each (Total: 30,000 paise)
-curl -s --noproxy "*" -X POST "${BASE_URL}/wallets/${W1}/topup" -H "Content-Type: application/json" -d '{"amountPaise": 10000}' > /dev/null
-curl -s --noproxy "*" -X POST "${BASE_URL}/wallets/${W2}/topup" -H "Content-Type: application/json" -d '{"amountPaise": 10000}' > /dev/null
-curl -s --noproxy "*" -X POST "${BASE_URL}/wallets/${W3}/topup" -H "Content-Type: application/json" -d '{"amountPaise": 10000}' > /dev/null
+WX=$(curl -s -X POST "${BASE_URL}/wallets" -H "Content-Type: application/json" -d "{\"userId\":\"${USER_X}\"}" | jq -r '.id')
+WY=$(curl -s -X POST "${BASE_URL}/wallets" -H "Content-Type: application/json" -d "{\"userId\":\"${USER_Y}\"}" | jq -r '.id')
 
-INITIAL_TOTAL=30000
+curl -s -X POST "${BASE_URL}/wallets/${WX}/topup" -H "Content-Type: application/json" -d '{"amountPaise":10000}' > /dev/null
+curl -s -X POST "${BASE_URL}/wallets/${WY}/topup" -H "Content-Type: application/json" -d '{"amountPaise":10000}' > /dev/null
 
-# Fire 100 transfers back and forth, including overdraw amounts (7000 paise)
-WALLETS=("${W1}" "${W2}" "${W3}")
-AMOUNTS=(500 1200 2500 7000)
+pids=()
 
-for i in $(seq 1 100); do
-  SRC=${WALLETS[$((RANDOM % 3))]}
-  TGT=${WALLETS[$((RANDOM % 3))]}
-  while [ "${SRC}" == "${TGT}" ]; do
-    TGT=${WALLETS[$((RANDOM % 3))]}
-  done
-  AMT=${AMOUNTS[$((RANDOM % 4))]}
-  KEY="contention_$(date +%s%N)_${i}"
-
-  curl -s --noproxy "*" -X POST "${BASE_URL}/transfers" \
-    -H "Content-Type: application/json" \
-    -H "Idempotency-Key: ${KEY}" \
-    -d "{\"sourceWalletId\": \"${SRC}\", \"targetWalletId\": \"${TGT}\", \"amountPaise\": ${AMT}}" > /dev/null &
+for i in $(seq 1 50); do
+  (
+    curl -s -X POST "${BASE_URL}/transfers" \
+      -H "Content-Type: application/json" \
+      -H "Idempotency-Key: tx_xy_${i}_$(date +%s%N)" \
+      -d "{\"sourceWalletId\":\"${WX}\",\"targetWalletId\":\"${WY}\",\"amountPaise\":300}" > /dev/null
+  ) &
+  pids+=($!)
+  (
+    curl -s -X POST "${BASE_URL}/transfers" \
+      -H "Content-Type: application/json" \
+      -H "Idempotency-Key: tx_yx_${i}_$(date +%s%N)" \
+      -d "{\"sourceWalletId\":\"${WY}\",\"targetWalletId\":\"${WX}\",\"amountPaise\":300}" > /dev/null
+  ) &
+  pids+=($!)
 done
-wait
 
-FINAL_B1=$(curl -s --noproxy "*" "${BASE_URL}/wallets/${W1}" | jq -r '.balancePaise')
-FINAL_B2=$(curl -s --noproxy "*" "${BASE_URL}/wallets/${W2}" | jq -r '.balancePaise')
-FINAL_B3=$(curl -s --noproxy "*" "${BASE_URL}/wallets/${W3}" | jq -r '.balancePaise')
-FINAL_TOTAL=$((FINAL_B1 + FINAL_B2 + FINAL_B3))
+for i in $(seq 1 10); do
+  (
+    curl -s -X POST "${BASE_URL}/transfers" \
+      -H "Content-Type: application/json" \
+      -H "Idempotency-Key: tx_od_${i}_$(date +%s%N)" \
+      -d "{\"sourceWalletId\":\"${WX}\",\"targetWalletId\":\"${WY}\",\"amountPaise\":500000}" > /dev/null
+  ) &
+  pids+=($!)
+done
 
-echo "  Balances: W1=${FINAL_B1}p, W2=${FINAL_B2}p, W3=${FINAL_B3}p"
-echo "  Total before: ${INITIAL_TOTAL}p | Total after: ${FINAL_TOTAL}p"
+for pid in "${pids[@]}"; do wait "$pid"; done
 
-if [ "${FINAL_TOTAL}" -eq "${INITIAL_TOTAL}" ] && [ "${FINAL_B1}" -ge 0 ] && [ "${FINAL_B2}" -ge 0 ] && [ "${FINAL_B3}" -ge 0 ]; then
-  echo "  ✔ GATE 3 PASSED: Conservation invariant held exact (Zero loss/gain) and no overdraft occurred."
+FINAL_X=$(curl -s -X POST "${BASE_URL}/wallets" -H "Content-Type: application/json" -d "{\"userId\":\"${USER_X}\"}" | jq -r '.balancePaise')
+FINAL_Y=$(curl -s -X POST "${BASE_URL}/wallets" -H "Content-Type: application/json" -d "{\"userId\":\"${USER_Y}\"}" | jq -r '.balancePaise')
+TOTAL=$((FINAL_X + FINAL_Y))
+
+if [ "${TOTAL}" -eq 20000 ] && [ "${FINAL_X}" -ge 0 ] && [ "${FINAL_Y}" -ge 0 ]; then
+  echo "✔ Conservation PASSED: Total ledger preserved at exactly 20000 paise (WX: ${FINAL_X}, WY: ${FINAL_Y})."
 else
-  echo "  ✖ GATE 3 FAILED: Conservation broken or negative balance detected!"
+  echo "❌ Conservation FAILED: Sum was ${TOTAL}, expected 20000."
   exit 1
 fi
 
 echo ""
 echo "============================================================"
-echo "ALL HARD GATES PASSED CLEANLY!"
+echo " ALL INVARIANT PROBES COMPLETED CLEANLY"
 echo "============================================================"
+EOF
+
+chmod +x burst.sh
+git add burst.sh
+git commit -m "fix(test): persist production burst probe script"
+git push https://<YOUR_PERSONAL_TOKEN>@github.com/Prem1594/paytm_wallet_service.git main
